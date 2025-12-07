@@ -10,7 +10,7 @@ def generate_ideal_palette(style, label, n=5):
 
     if style == "tone_on_tone":
         # ===========================
-        # 1. Hue 범위 (현실적 확장)
+        # 1. Hue 
         # ===========================
         hue_map = {
             "beige": (0.08, 0.14),
@@ -26,7 +26,7 @@ def generate_ideal_palette(style, label, n=5):
             base_h = random.uniform(*hue_map[label])
 
         # ===========================
-        # 2. Saturation 범위 (현실 인테리어)
+        # 2. Saturation
         # ===========================
         sat_map = {
             "beige": (0.18, 0.45),
@@ -38,7 +38,7 @@ def generate_ideal_palette(style, label, n=5):
         s_min, s_max = sat_map[label]
 
         # ===========================
-        # 3. Value 범위 (현실 인테리어)
+        # 3. Value 
         # ===========================
         val_map = {
             "beige": (0.55, 0.95),
@@ -50,7 +50,7 @@ def generate_ideal_palette(style, label, n=5):
         v_min, v_max = val_map[label]
 
         # ===========================
-        # 4. 팔레트 생성 (★ 핵심 개선!)
+        # 4. generate palette
         # ===========================
         # (A) Hue variation
         h_var_map = {
@@ -143,7 +143,7 @@ def generate_ideal_palette(style, label, n=5):
 
 
 # ===========================================
-# 설정 및 메인 로직 (동일)
+# main
 # ===========================================
 ROOT = "Pinterest"
 OUT_JSONL = "final_train_dataset2.jsonl"
