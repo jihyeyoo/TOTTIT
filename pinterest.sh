@@ -108,4 +108,4 @@ done
 
 
 
-echo "🎉 All downloads complete!
+echo "All downloads complete!
