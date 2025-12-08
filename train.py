@@ -61,18 +61,16 @@ def calculate_palette_loss_dual(pred_images, gt_palettes, styles,
         # Tone-on-Tone: Value-only Loss
         # ============================================
         if style == "tone_on_tone":
-            # RGB → HSV 변환
+            # RGB → HSV 
             p_hsv = rgb_to_hsv_batch(p_rgb)  # [N, 3]
             t_hsv = rgb_to_hsv_batch(t_rgb)  # [5, 3]
             
-            # Value만 추출
+            # Value Distance
             p_v = p_hsv[:, 2].unsqueeze(1)  # [N, 1]
             t_v = t_hsv[:, 2].unsqueeze(0)  # [1, 5]
-            
-            # Value 거리 계산
             dist = torch.abs(p_v - t_v)  # [N, 5]
             
-            # Hard Min (명도는 명확히 구분)
+            # Hard Min
             min_dist, _ = torch.min(dist, dim=1)
             loss = torch.mean(min_dist) * tone_on_tone_weight
             
