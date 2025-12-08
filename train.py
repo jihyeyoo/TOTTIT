@@ -2,12 +2,12 @@ import torch.nn.functional as F
 import colorsys
 
 # ============================================================
-# Dual Loss: Style별 다른 Loss 함수
+# Dual Loss
 # ============================================================
 def rgb_to_hsv_batch(rgb):
     """
-    RGB → HSV 변환 (배치)
-    rgb: [N, 3] 텐서 (0~1 범위)
+    RGB → HSV for Value-only Hard Loss 
+    rgb: [N, 3] tensor (0~1)
     return: [N, 3] (H, S, V)
     """
     r, g, b = rgb[:, 0], rgb[:, 1], rgb[:, 2]
@@ -22,7 +22,7 @@ def rgb_to_hsv_batch(rgb):
     # Saturation
     s = torch.where(max_c > 0, delta / max_c, torch.zeros_like(max_c))
     
-    # Hue (간단 버전)
+    # Hue 
     h = torch.zeros_like(max_c)
     mask = (max_c == r) & (delta > 0)
     h[mask] = ((g[mask] - b[mask]) / delta[mask]) % 6.0
@@ -39,10 +39,8 @@ def calculate_palette_loss_dual(pred_images, gt_palettes, styles,
                                  tone_on_tone_weight=0.05, 
                                  tone_in_tone_weight=0.1):
     """
-    Style별 다른 Loss 전략
-    
-    Tone-on-Tone: Value-only Loss (약하게, 0.05)
-    Tone-in-Tone: RGB Soft Assignment (강하게, 0.1)
+    Tone-on-Tone: Value-only Loss (0.05)
+    Tone-in-Tone: RGB Soft Assignment (0.1)
     """
     images = (pred_images / 2 + 0.5).clamp(0, 1)
     targets = gt_palettes.float() / 255.0
@@ -83,11 +81,10 @@ def calculate_palette_loss_dual(pred_images, gt_palettes, styles,
         # ============================================
         # Tone-in-Tone: RGB Soft Assignment
         # ============================================
-        else:  # tone_in_tone
-            # RGB 거리 계산
+        else: 
+            # RGB distance
             dist = torch.norm(p_rgb.unsqueeze(1) - t_rgb.unsqueeze(0), dim=2)
             
-            # Soft Assignment (색 섞어도 OK)
             temperature = 0.5
             weights = F.softmax(-dist / temperature, dim=1)
             soft_dist = (dist * weights).sum(dim=1)
@@ -155,7 +152,7 @@ def collate_fn(examples):
     pixel_values = torch.stack([example["pixel_values"] for example in examples])
     input_ids = torch.stack([example["input_ids"] for example in examples])
     gt_palettes = torch.stack([example["gt_palette"] for example in examples])
-    styles = [example["style"] for example in examples]  # ★ List
+    styles = [example["style"] for example in examples]  
     
     return {
         "pixel_values": pixel_values,
@@ -246,11 +243,11 @@ def main():
         
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(unet):
-                # 1. Latent 생성
+                # 1. Latent 
                 latents = vae.encode(batch["pixel_values"].to(dtype=torch.float32)).latent_dist.sample()
                 latents = latents * vae.config.scaling_factor
 
-                # 2. Noise 추가
+                # 2. Add Noise
                 noise = torch.randn_like(latents)
                 bsz = latents.shape[0]
                 timesteps = torch.randint(
@@ -258,7 +255,7 @@ def main():
                 ).long()
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
-                # 3. UNet 예측
+                # 3. UNet
                 encoder_hidden_states = text_encoder(batch["input_ids"])[0]
                 model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
 
@@ -282,8 +279,8 @@ def main():
                     decoded_images,
                     batch["gt_palette"],
                     batch["styles"], 
-                    tone_on_tone_weight=0.05,  # 약하게
-                    tone_in_tone_weight=0.10   # 강하게
+                    tone_on_tone_weight=0.05, 
+                    tone_in_tone_weight=0.10   
                 )
 
                 loss = loss_diff + loss_color
@@ -295,7 +292,7 @@ def main():
                 optimizer.step()
                 optimizer.zero_grad()
 
-            # 로그 업데이트
+            # Log Update
             current_loss = loss.detach().item()
             current_diff = loss_diff.detach().item()
             current_col = loss_color.detach().item()
@@ -315,13 +312,12 @@ def main():
             }
             progress_bar.set_postfix(**logs)
         
-        # Epoch 종료 후 평균 출력
         avg_loss = epoch_loss / len(train_dataloader)
         avg_diff = epoch_diff / len(train_dataloader)
         avg_col = epoch_col / len(train_dataloader)
         print(f"\n✅ Epoch {epoch+1} Done! Avg Loss: {avg_loss:.4f} (Diff: {avg_diff:.4f}, Color: {avg_col:.4f})")
         
-        # ★ [추가] Epoch마다 체크포인트 저장
+        # Save Checkpoint
         if (epoch + 1) % 5 == 0:
             checkpoint_dir = f"{OUTPUT_DIR}/checkpoint-epoch{epoch+1}"
             os.makedirs(checkpoint_dir, exist_ok=True)
