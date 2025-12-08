@@ -52,7 +52,7 @@ def generate_ideal_palette(style, label, n=5):
         # ===========================
         # 4. generate palette
         # ===========================
-        # (A) Hue variation
+        # Hue variation
         h_var_map = {
             "blue": 0.05,
             "green": 0.08,
@@ -62,27 +62,22 @@ def generate_ideal_palette(style, label, n=5):
         }
         h_var = h_var_map[label]
         
-        # (B) 명도 앵커 생성 (순서 유지 + 자연스러움)
+        # Value Anchoring
         v_anchors = []
         v_step = (v_max - v_min) / (n - 1)
         
         for i in range(n):
-            # 기본 앵커 (균등 분할)
             v_anchor = v_min + i * v_step
             
-            # ★ 랜덤성 추가 (하지만 범위 제한)
-            # 앞뒤 앵커와 겹치지 않도록
-            noise_range = v_step * 0.3  # 30% 노이즈
+            # randomness
+            noise_range = v_step * 0.3  # 30% noise
             v_anchor += random.uniform(-noise_range, noise_range)
             
-            # 범위 제한
             v_anchor = max(v_min, min(v_max, v_anchor))
             v_anchors.append(v_anchor)
         
-        # (C) 앵커 정렬 (순서 보장)
         v_anchors.sort()
         
-        # (D) 각 색상 생성
         for i in range(n):
             # Hue
             if label == "grey":
@@ -95,9 +90,9 @@ def generate_ideal_palette(style, label, n=5):
             s += random.uniform(-0.05, 0.05)
             s = max(0, min(1, s))
             
-            # Value (앵커 기반)
+            # Value 
             v = v_anchors[i]
-            v += random.uniform(-0.03, 0.03)  # 미세 조정
+            v += random.uniform(-0.03, 0.03)  
             v = max(v_min, min(v_max, v))
             
             r, g, b = colorsys.hsv_to_rgb(h, s, v)
@@ -106,7 +101,7 @@ def generate_ideal_palette(style, label, n=5):
         return palette
 
     # =========================================================
-    # Tone-in-Tone (유지)
+    # Tone-in-Tone 
     # =========================================================
     elif style == "tone_in_tone":
         if label == "pastel":
@@ -139,9 +134,7 @@ def generate_ideal_palette(style, label, n=5):
             palette.append([int(r*255), int(g*255), int(b*255)])
 
         return palette
-
-
-
+        
 # ===========================================
 # main
 # ===========================================
